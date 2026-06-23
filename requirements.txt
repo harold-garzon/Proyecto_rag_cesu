@@ -126,3 +126,4 @@ Flask-CORS==4.0.0
 langchain-groq
 gunicorn
 ngchain-huggingface
+sentence-transformers
