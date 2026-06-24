@@ -51,45 +51,6 @@ for paquete in paquetes:
 
 
 # =============================================================================
-# PASO 0 — Búsqueda Semántica (demostración)
-# =============================================================================
-
-from langchain_huggingface import HuggingFaceEmbeddings
-from sklearn.metrics.pairwise import cosine_similarity
-import numpy as np
-
-EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
-
-embeddings = HuggingFaceEmbeddings(
-    model_name=EMBEDDING_MODEL,
-    model_kwargs={"device": "cpu"},
-    encode_kwargs={"normalize_embeddings": True}
-)
-
-print(f"\n[OK] Embeddings locales cargados: {EMBEDDING_MODEL}")
-
-reglamento = [
-    "Los alumnos con promedio superior a 4.5 reciben un incentivo económico.",
-    "El abandono de los estudios sin previo aviso causa sanción administrativa.",
-    "Se pueden pedir exámenes extraordinarios si hay una causa médica comprobada.",
-    "La universidad ofrece apoyo financiero para proyectos de investigación.",
-]
-
-corpus_embeddings = embeddings.embed_documents(reglamento)
-query = "ayuda de dinero por notas excelentes"
-query_embedding = embeddings.embed_query(query)
-
-scores = cosine_similarity([query_embedding], corpus_embeddings)
-indices_ordenados = np.argsort(scores[0])[::-1]
-
-print(f"\nConsulta: \"{query}\"\n")
-for idx in indices_ordenados:
-    barra = "█" * int(scores[0][idx] * 20)
-    print(f"  {scores[0][idx]:.4f} {barra}")
-    print(f"  {reglamento[idx]}\n")
-
-
-# =============================================================================
 # PASO 1 — Carga de Documentos PDF
 # =============================================================================
 
@@ -161,8 +122,42 @@ print(f"  Contenido: {chunks[20].page_content}")
 
 
 # =============================================================================
-# PASO 3 — Embeddings (ya cargados en el Paso 0)
+# PASO 3 — Embeddings 
 # =============================================================================
+
+
+from langchain_huggingface import HuggingFaceEmbeddings
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+EMBEDDING_MODEL = "paraphrase-multilingual-MiniLM-L12-v2"
+
+embeddings = HuggingFaceEmbeddings(
+    model_name=EMBEDDING_MODEL,
+    model_kwargs={"device": "cpu"},
+    encode_kwargs={"normalize_embeddings": True}
+)
+
+print(f"\n[OK] Embeddings locales cargados: {EMBEDDING_MODEL}")
+
+reglamento = [
+    "Loa programas académicos sona quellos que cumplen condiciones de calidad y pertinencia.",
+    "Las acreditaciones de alta calidad se otorgan a programas que demuestran excelencia en su gestión y resultados.",
+]
+
+corpus_embeddings = embeddings.embed_documents(reglamento)
+query = "FACTORES DE CALIDAD DE LOS PROGRAMAS ACADÉMICOS"
+query_embedding = embeddings.embed_query(query)
+
+scores = cosine_similarity([query_embedding], corpus_embeddings)
+indices_ordenados = np.argsort(scores[0])[::-1]
+
+print(f"\nConsulta: \"{query}\"\n")
+for idx in indices_ordenados:
+    barra = "█" * int(scores[0][idx] * 20)
+    print(f"  {scores[0][idx]:.4f} {barra}")
+    print(f"  {reglamento[idx]}\n")
+
 
 embeddings_model = embeddings
 
@@ -376,72 +371,72 @@ for pregunta in preguntas_prueba:
 # PASO 8 — Evaluación con RAGAs
 # =============================================================================
 
-#from ragas import evaluate, EvaluationDataset
-#from ragas.metrics import Faithfulness, AnswerRelevancy, ContextPrecision
-#from ragas.llms import LangchainLLMWrapper
-#from ragas.embeddings import LangchainEmbeddingsWrapper
-#import pandas as pd
+from ragas import evaluate, EvaluationDataset
+from ragas.metrics import Faithfulness, AnswerRelevancy, ContextPrecision
+from ragas.llms import LangchainLLMWrapper
+from ragas.embeddings import LangchainEmbeddingsWrapper
+import pandas as pd
 
-#print("\n[OK] RAGas importado correctamente")
+print("\n[OK] RAGas importado correctamente")
 
-# muestras_evaluacion = [
-#     {
-#         "user_input": "Qué es un vehículo de servicio diplomático o consular?",
-#         "reference":  "Vehículo automotor destinado al servicio de funcionarios diplomáticos o consulares"
-#     },
-#     {
-#         "user_input": "¿en los pasos de nivel que deben colocar las entidades ferroviarias?",
-#         "reference":  "señales, barreras y luces en los pasos de nivel"
-#     },
-#     {
-#         "user_input": "Que es la acreditación en alta calidad?",
-#         "reference":  "la alta calidad se reconoce cuando se reúne las cualidades que caracterizan su universalidad y, al mismo tiempo, hace realidad la especificidad que corresponde a sus propósitos y objetivos particulares, de manera sobresaliente."
-#     },
-# ]
+muestras_evaluacion = [
+    {
+        "user_input": "Qué es un vehículo de servicio diplomático o consular?",
+        "reference":  "Vehículo automotor destinado al servicio de funcionarios diplomáticos o consulares"
+    },
+    {
+        "user_input": "¿en los pasos de nivel que deben colocar las entidades ferroviarias?",
+        "reference":  "señales, barreras y luces en los pasos de nivel"
+    },
+    {
+        "user_input": "Que es la acreditación en alta calidad?",
+        "reference":  "La acreditación de alta calidad es un reconocimiento otorgado a programas académicos que cumplen con estándares de excelencia en su gestión y resultados, demostrando calidad y pertinencia en la educación ofrecida."
+    },
+]
 
-# registros = []
-# print("Ejecutando pipeline RAG para cada muestra...\n")
+registros = []
+print("Ejecutando pipeline RAG para cada muestra...\n")
 
-# for muestra in muestras_evaluacion:
-#     pregunta = muestra["user_input"]
-#     resultado = rag_pipeline(pregunta, k=3)
-#     registros.append({
-#         "user_input":         pregunta,
-#         "retrieved_contexts": [doc.page_content for doc in resultado["fragmentos"]],
-#         "response":           resultado["respuesta"],
-#         "reference":          muestra["reference"]
-#     })
-#     print(f"[OK] {pregunta[:55]}")
-#     print(f"     -> {resultado['respuesta'][:90]}...\n")
+for muestra in muestras_evaluacion:
+    pregunta = muestra["user_input"]
+    resultado = rag_pipeline(pregunta, k=3)
+    registros.append({
+        "user_input":         pregunta,
+        "retrieved_contexts": [doc.page_content for doc in resultado["fragmentos"]],
+        "response":           resultado["respuesta"],
+        "reference":          muestra["reference"]
+    })
+    print(f"[OK] {pregunta[:55]}")
+    print(f"     -> {resultado['respuesta'][:90]}...\n")
 
-# print(f"Dataset de evaluación listo: {len(registros)} muestras")
+print(f"Dataset de evaluación listo: {len(registros)} muestras")
 
-# llm_juez        = LangchainLLMWrapper(llm)
-# embeddings_juez = LangchainEmbeddingsWrapper(embeddings_model)
+llm_juez        = LangchainLLMWrapper(llm)
+embeddings_juez = LangchainEmbeddingsWrapper(embeddings_model)
 
-# dataset = EvaluationDataset.from_list(registros)
+dataset = EvaluationDataset.from_list(registros)
 
-# print("Evaluando con RAGAs (Groq como juez)...\n")
+print("Evaluando con RAGAs (Groq como juez)...\n")
 
-# resultados = evaluate(
-#     dataset=dataset,
-#     metrics=[Faithfulness(), AnswerRelevancy(), ContextPrecision()],
-#     llm=llm_juez,
-#     embeddings=embeddings_juez
-# )
+resultados = evaluate(
+    dataset=dataset,
+    metrics=[Faithfulness(), AnswerRelevancy(), ContextPrecision()],
+    llm=llm_juez,
+    embeddings=embeddings_juez
+)
 
-# df = resultados.to_pandas()
+df = resultados.to_pandas()
 
-# print("=" * 65)
-# print("RESULTADOS DE EVALUACIÓN RAGAs")
-# print("=" * 65)
+print("=" * 65)
+print("RESULTADOS DE EVALUACIÓN RAGAs")
+print("=" * 65)
 
-# cols_score = ["faithfulness", "answer_relevancy", "context_precision"]
-# cols_mostrar = ["user_input"] + [c for c in cols_score if c in df.columns]
-# print(df[cols_mostrar].to_string(index=False))
+cols_score = ["faithfulness", "answer_relevancy", "context_precision"]
+cols_mostrar = ["user_input"] + [c for c in cols_score if c in df.columns]
+print(df[cols_mostrar].to_string(index=False))
 
-# print("\nPromedios globales:")
-# for col in cols_score:
-#     if col in df.columns:
-#         barra = "█" * int(df[col].mean() * 20)
-#         print(f"  {col:<25} {df[col].mean():.4f}  {barra}")
+print("\nPromedios globales:")
+for col in cols_score:
+    if col in df.columns:
+        barra = "█" * int(df[col].mean() * 20)
+        print(f"  {col:<25} {df[col].mean():.4f}  {barra}")
